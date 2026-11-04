@@ -1,4 +1,13 @@
-1. Messages
+Introduction 
+This protocol defines how FTP client and FTP server communicate with each other
+to support file uploads, downloads, and file listings.
+
+The FTP application will use two separate connections:
+- Control Connection: Used to exchange commands, responses, and status messages
+- Data Connection: Used to transfer file contents and list files. A new data connection
+is established for every get, put, and ls command, the commands which transfer data
+
+1. Message Types and Formats
 Control messages are sent as newline terminated messages, each containing
 a command or response followed by any required information.
 
@@ -24,3 +33,10 @@ Each control message will contain:
 The receiver will first read the header to determine the message length,
 and then receive the remaining message body using a loop until all bytes have arrived
 
+3. Data Connection Establishment
+For every get, put, and ls command a new dedicated data connection will be established.
+
+After the operaton is complete, both sides with close the connection, and the original
+control connection will remain open for any other commands.
+
+4. 
