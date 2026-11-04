@@ -1,0 +1,26 @@
+1. Messages
+Control messages are sent as newline terminated messages, each containing
+a command or response followed by any required information.
+
+Commands Supported:
+ls - request a list of the server's files
+get [filename] - requests a file with the given name from the server
+put [filename] - requests to upload a file with the given name
+quit - requests termination of the FTP session
+
+Server Responses:
+ready - the request was accepted and server is ready to proceed
+success - the operation was completed successfully
+error - the requested operation failed
+bye - acknowledges the cilent disconnect request
+
+2. Message Sizes & Formatting
+To ensure the full messages are recieved, the protocol uses a header for each message
+
+Each control message will contain:
+- A fixed size 10 byte header indicating the length of the message body
+- The message body itself
+
+The receiver will first read the header to determine the message length,
+and then receive the remaining message body using a loop until all bytes have arrived
+
