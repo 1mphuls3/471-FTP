@@ -1,5 +1,5 @@
 Introduction 
-This protocol defines how FTP client and FTP server communicate with each other
+This protocol describes how an FTP client and FTP server communicate
 to support file uploads, downloads, and file listings.
 
 The FTP application will use two separate connections:
@@ -38,5 +38,3 @@ For every get, put, and ls command a new dedicated data connection will be estab
 
 After the operaton is complete, both sides with close the connection, and the original
 control connection will remain open for any other commands.
-
-4. 
