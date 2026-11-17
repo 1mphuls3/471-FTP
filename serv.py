@@ -19,6 +19,7 @@ def handleGetFile(controlSocket, filename, port):
     # Reject paths outside of serverFiles
     if os.path.commonpath((SERVER_FILES, filePath)) != SERVER_FILES:
         sendControlMessage(controlSocket, "ERROR INVALID_FILENAME")
+        print(f"get {filename}: FAILURE (invalid filename)")
         return
 
     # ERROR response if given file cannot be found or problem with opening it
@@ -26,9 +27,11 @@ def handleGetFile(controlSocket, filename, port):
         fileObj = open(filePath, "rb")
     except FileNotFoundError:
         sendControlMessage(controlSocket, "ERROR FILE_NOT_FOUND")
+        print(f"get {filename}: FAILURE (file not found)")
         return
     except OSError:
         sendControlMessage(controlSocket, "ERROR FILE_ACCESS")
+        print(f"get {filename}: FAILURE (file access)")
         return
 
     dataSocket = None
@@ -47,9 +50,11 @@ def handleGetFile(controlSocket, filename, port):
             dataSocket.sendall(fileData)
 
         sendControlMessage(controlSocket, "SUCCESS")
+        print(f"get {filename}: SUCCESS")
         
     except OSError:
         sendControlMessage(controlSocket, "ERROR TRANSFER_FAILED")
+        print(f"get {filename}: FAILURE (transfer failed)")
     finally:
         # Release both resources
         fileObj.close()
@@ -147,6 +152,7 @@ def handleListFiles(controlSocket, port):
 
 def handleQuit(controlSocket):
     sendControlMessage(controlSocket, "BYE")
+    print("quit: SUCCESS")
 
 def handleCommand(controlSocket, commandLine):
     # Separate the command verb from its optional arguments

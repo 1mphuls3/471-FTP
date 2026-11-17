@@ -21,6 +21,7 @@ def getFile(controlSocket, filename):
             return
 
         dataSocket, addr = dataServer.accept()
+        bytesReceived = 0
         with dataSocket, open(localPath, "wb") as fileObj:
             # The data connection closes when the complete file has arrived
             while True:
@@ -30,11 +31,12 @@ def getFile(controlSocket, filename):
                     break
                     
                 fileObj.write(fileData)
+                bytesReceived += len(fileData)
 
         response = receiveControlMessage(controlSocket)
 
         if response == "SUCCESS":
-            print(f"Downloaded {filename}!")
+            print(f"Downloaded {filename}! ({bytesReceived} bytes)")
         else:
             print(response or "Server closed the connection")
 
