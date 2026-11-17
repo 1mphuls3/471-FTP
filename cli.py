@@ -11,11 +11,6 @@ def getFile(controlSocket, filename):
     clientRoot = os.path.realpath(CLIENT_FILES)
     localPath = os.path.realpath(os.path.join(CLIENT_FILES, filename))
 
-    # Keep downloads inside the configured client directory
-    if os.path.commonpath((clientRoot, localPath)) != clientRoot:
-        print("Invalid filename")
-        return
-
     dataServer, port = createDataConnection()
     try:
         # Tell the server which port will accept the file data
