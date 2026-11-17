@@ -8,23 +8,23 @@ The FTP application will use two separate connections:
 is established for every get, put, and ls command, the commands which transfer data
 
 1. Message Types and Formats
-Control messages are sent as newline terminated messages, each containing
-a command or response followed by any required information.
+Control messages contain a command or response followed by any required
+information, preceded by the fixed-size length header described below.
 
 Commands Supported:
 ls - request a list of the server's files
-get [filename] - requests a file with the given name from the server
-put [filename] - requests to upload a file with the given name
+get [filename] - requests to download a file with the given name from the server 
+put [filename] - requests to upload a file with the given name to the server
 quit - requests termination of the FTP session
 
 Server Responses:
-ready - the request was accepted and server is ready to proceed
-success - the operation was completed successfully
-error - the requested operation failed
-bye - acknowledges the cilent disconnect request
+READY - the request was accepted and server is ready to proceed
+SUCCESS - the operation was completed successfully
+ERROR [ERROR_TYPE] - the requested operation failed, such as FILE_NOT_FOUND, INVALID_FILENAME, FILE_ACCESS, or TRANSFER_FAILED
+BYE - acknowledges the cilent disconnect request
 
 2. Message Sizes & Formatting
-To ensure the full messages are recieved, the protocol uses a header for each message
+To ensure the full messages are recieved, control messages use a header for each message.
 
 Each control message will contain:
 - A fixed size 10 byte header indicating the length of the message body
