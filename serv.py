@@ -55,11 +55,95 @@ def handleGetFile(controlSocket, filename, port):
         fileObj.close()
         dataSocket.close()
 
-def handlePutFile(controlSocket, filename):
-    pass
+def handlePutFile(controlSocket, filename, port):
+    filePath = os.path.realpath(os.path.join(SERVER_FILES, filename))
 
-def handleListFiles(controlSocket):
-    pass
+    # Reject paths outside of serverFiles
+    if os.path.commonpath((SERVER_FILES, filePath)) != SERVER_FILES:
+        sendControlMessage(controlSocket, "ERROR INVALID_FILENAME")
+        print(f"put {filename}: FAILURE (invalid filename)")
+        return
+
+    # ERROR response if the destination file cannot be created
+    try:
+        fileObj = open(filePath, "wb")
+    except OSError:
+        sendControlMessage(controlSocket, "ERROR FILE_ACCESS")
+        print(f"put {filename}: FAILURE (file access)")
+        return
+
+    dataSocket = None
+    bytesReceived = 0
+    succeeded = False
+    try:
+        # The client accepts the data connection after receiving READY
+        sendControlMessage(controlSocket, "READY")
+        dataSocket = connectClient(controlSocket.getpeername()[0], port)
+
+        # The data connection closes when the complete file has arrived
+        while True:
+            fileData = dataSocket.recv(4096)
+
+            if not fileData:
+                break
+
+            fileObj.write(fileData)
+            bytesReceived += len(fileData)
+
+        sendControlMessage(controlSocket, "SUCCESS")
+        succeeded = True
+        print(f"put {filename}: SUCCESS ({bytesReceived} bytes)")
+
+    except OSError:
+        print(f"put {filename}: FAILURE (transfer failed)")
+        try:
+            sendControlMessage(controlSocket, "ERROR TRANSFER_FAILED")
+        except OSError:
+            pass
+    finally:
+        # Release both resources
+        fileObj.close()
+        if dataSocket:
+            dataSocket.close()
+        # Don't leave a partial file behind
+        if not succeeded:
+            try:
+                os.remove(filePath)
+            except OSError:
+                pass
+
+def handleListFiles(controlSocket, port):
+    # ERROR response if the directory cannot be read
+    try:
+        listing = "\n".join(sorted(os.listdir(SERVER_FILES))).encode("utf-8")
+    except OSError:
+        sendControlMessage(controlSocket, "ERROR LIST_FAILED")
+        print("ls: FAILURE (cannot read directory)")
+        return
+
+    dataSocket = None
+    try:
+        # The client accepts the data connection after receiving READY
+        sendControlMessage(controlSocket, "READY")
+        dataSocket = connectClient(controlSocket.getpeername()[0], port)
+
+        # Closing the data socket tells the client the listing is complete
+        dataSocket.sendall(listing)
+        dataSocket.close()
+        dataSocket = None
+
+        sendControlMessage(controlSocket, "SUCCESS")
+        print("ls: SUCCESS")
+
+    except OSError:
+        print("ls: FAILURE (transfer failed)")
+        try:
+            sendControlMessage(controlSocket, "ERROR TRANSFER_FAILED")
+        except OSError:
+            pass
+    finally:
+        if dataSocket:
+            dataSocket.close()
 
 def handleQuit(controlSocket):
     sendControlMessage(controlSocket, "BYE")
@@ -71,8 +155,9 @@ def handleCommand(controlSocket, commandLine):
         return False
 
     command = commandParts[0].lower()
+    arguments = commandParts[1] if len(commandParts) > 1 else ""
+
     if command == "get":
-        arguments = commandParts[1]
         try:
             filename, portText = arguments.rsplit(maxsplit=1)
             port = int(portText)
@@ -82,15 +167,22 @@ def handleCommand(controlSocket, commandLine):
             handleGetFile(controlSocket, filename, port)
 
     elif command == "put":
-        arguments = commandParts[1]
-        if arguments:
-            handlePutFile(controlSocket, arguments)
-        else:
+        try:
+            filename, portText = arguments.rsplit(maxsplit=1)
+            port = int(portText)
+        except ValueError:
             sendControlMessage(controlSocket, "ERROR INVALID_ARGUMENT")
+        else:
+            handlePutFile(controlSocket, filename, port)
 
     elif command == "ls":
-        handleListFiles(controlSocket)
-        
+        try:
+            port = int(arguments)
+        except ValueError:
+            sendControlMessage(controlSocket, "ERROR INVALID_ARGUMENT")
+        else:
+            handleListFiles(controlSocket, port)
+
     elif command == "quit":
         handleQuit(controlSocket)
         return True
